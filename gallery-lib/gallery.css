@@ -1,6 +1,8 @@
 .gallery {
 	width: 100%;
 	overflow: hidden;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .gallery-wrapper {
@@ -10,4 +12,9 @@
 .gallery-slide {
 	min-height: 1px;
 	float: left;
+	transform: translateZ(0);
+}
+
+.gallery-grab {
+	cursor: grab;
 }
