@@ -2,6 +2,12 @@ const galleryClass = 'gallery';
 const galleryWrapperClass = 'gallery-wrapper';
 const galleryWrapperSlideClass = 'gallery-slide';
 const galleryGrabbableClass = 'gallery-grab';
+const galleryDotsClass = 'gallery-dots';
+const galleryDotClass = 'gallery-dot';
+const galleryDotsActiveClass = 'gallery-dot-active';
+const galleryNavClass = 'gallery-nav';
+const galleryNavLeftClass = 'gallery-nav-left';
+const galleryNavRightClass = 'gallery-nav-right';
 
 class Gallery {
 	constructor(el, options = {}) {
@@ -21,6 +27,11 @@ class Gallery {
 		this.stopDrag = this.stopDrag.bind(this);
 		this.dragging = this.dragging.bind(this);
 		this.setStylePosition = this.setStylePosition.bind(this);
+		this.clickDots = this.clickDots.bind(this);
+		this.moveToLeft = this.moveToLeft.bind(this);
+		this.moveToRight = this.moveToRight.bind(this);
+		this.changeCurrentSlide = this.changeCurrentSlide.bind(this);
+		this.changeActiveDotSlide = this.changeActiveDotSlide.bind(this);
 
 		this.manageHTML();
 		this.setParameters();
@@ -34,8 +45,15 @@ class Gallery {
 			<div class="${galleryWrapperClass}">
 				${this.containerNode.innerHTML}
 			</div>
+			<div class="${galleryNavClass}">
+				<button type="button" class="${galleryNavLeftClass}">Left</button>
+				<button type="button" class="${galleryNavRightClass}">Right</button>
+			</div>
+			<div class="${galleryDotsClass}">
+			</div>
 		`;
 		this.wrapper = this.containerNode.querySelector(`.${galleryWrapperClass}`);
+		this.dotsNode = this.containerNode.querySelector(`.${galleryDotsClass}`);
 
 		this.slidesNodes = Array.from(this.wrapper.children).map((childNode) =>
 			wrapElementByDiv({
@@ -43,6 +61,14 @@ class Gallery {
 				className: galleryWrapperSlideClass
 			})
 		);
+
+		this.dotsNode.innerHTML = Array.from(Array(this.size).keys()).map((key) => (
+			`<button class="${galleryDotClass} ${key === this.currentSlide ? galleryDotsActiveClass : ''}"></button>`
+		)).join('');
+
+		this.dotsNodes = this.dotsNode.querySelectorAll(`.${galleryDotClass}`);
+		this.navLeft = this.containerNode.querySelector(`.${galleryNavLeftClass}`);
+		this.navRigth = this.containerNode.querySelector(`.${galleryNavRightClass}`)
 	}
 
 	setParameters() {
@@ -66,6 +92,10 @@ class Gallery {
 		this.wrapper.addEventListener('pointerdown', this.startDrag);
 		window.addEventListener('pointerup', this.stopDrag);
 		window.addEventListener('pointercancel', this.stopDrag);
+
+		this.dotsNode.addEventListener('click', this.clickDots);
+		this.navLeft.addEventListener('click', this.moveToLeft);
+		this.navRigth.addEventListener('click', this.moveToRight);
 	}
 
 	destroyEvents() {
@@ -73,6 +103,10 @@ class Gallery {
 		this.wrapper.removeEventListener('pointerdown', this.startDrag);
 		window.removeEventListener('pointerup', this.stopDrag);
 		window.removeEventListener('pointercancel', this.stopDrag);
+
+		this.dotsNode.removeEventListener('click', this.clickDots);
+		this.navLeft.removeEventListener('click', this.moveToLeft);
+		this.navRigth.removeEventListener('click', this.moveToRight);
 	}
 
 	resizeGallery () {
@@ -91,9 +125,7 @@ class Gallery {
 	stopDrag () {
 		window.removeEventListener('pointermove', this.dragging);
 		this.containerNode.classList.remove(galleryGrabbableClass);
-		this.x = - this.currentSlide * (this.width + this.settings.margin);
-		this.setStylePosition();
-		this.setStyleTransition();
+		this.changeCurrentSlide();
 	}
 
 	dragging (evt) {
@@ -122,6 +154,62 @@ class Gallery {
 			this.currentSlideWasChanged = true;
 			this.currentSlide = this.currentSlide + 1;
 		}
+	}
+
+	clickDots(evt) {
+		const dotNode = evt.target.closest('button');
+		if (!dotNode) {
+			return;
+		}
+
+		let dotNumber;
+		for(let i = 0; i < this.dotNodes.length; i++) {
+			if(this.dotNodes[i] === dotNode) {
+				dotNumber = i;
+				break;
+			}
+
+			if(dotNumber === this.currentSlide) {
+				return;
+			}
+
+			this.currentSlide = dotNumber;
+			this.changeCurrentSlide();
+		}
+	}
+
+	moveToLeft () {
+		if (this.currentSlide <= 0) {
+			return;
+		}
+
+		this.currentSlide = this.currentSlide - 1;
+		this.changeCurrentSlide();
+	}
+
+	moveToRight () {
+		if (this.currentSlide >= this.size - 1) {
+			return;
+		}
+
+		this.currentSlide = this.currentSlide + 1;
+		this.changeCurrentSlide();
+	}
+
+	changeCurrentSlide () {
+		this.x = - this.currentSlide * (this.width + this.settings.margin);
+		this.setStylePosition();
+		this.setStyleTransition();
+		this.changeActiveDotSlide();
+	}
+
+	changeActiveDotSlide () {
+		for(let i = 0; i < this.dotNodes.length; i++){
+			this.dotNodes[i].classList.remove(galleryDotsActiveClass);
+			this.dotNodes[this.currentSlide].classList.add(galleryDotsActiveClass);
+		}
+
+		
 	}
 
 	setStylePosition() {

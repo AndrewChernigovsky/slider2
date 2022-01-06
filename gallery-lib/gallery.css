@@ -18,3 +18,37 @@
 .gallery-grab {
 	cursor: grab;
 }
+
+.gallery-dots {
+	display: flex;
+	justify-content: center;
+}
+
+.gallery-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: dimgray;
+	margin: 4px;
+	cursor: pointer;
+	transition: all 0.3s;
+	border: none;
+	outline: none;
+	padding: 0;
+}
+
+.gallery-dot:hover,
+.gallery-dot-active {
+	background: salmon;
+}
+
+.gallery-nav {
+	display: flex;
+	justify-content: center;
+	padding: 10px 0 0;
+}
+
+.gallery-nav button{
+	margin: 5px;
+	cursor: pointer;
+}
