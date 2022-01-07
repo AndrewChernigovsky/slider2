@@ -1,4 +1,5 @@
 const galleryClass = 'gallery';
+const galleryWrapperContainerClass = 'gallery-container';
 const galleryWrapperClass = 'gallery-wrapper';
 const galleryWrapperSlideClass = 'gallery-slide';
 const galleryGrabbableClass = 'gallery-grab';
@@ -8,12 +9,13 @@ const galleryDotsActiveClass = 'gallery-dot-active';
 const galleryNavClass = 'gallery-nav';
 const galleryNavLeftClass = 'gallery-nav-left';
 const galleryNavRightClass = 'gallery-nav-right';
+const galleryNavDisabledClass = 'gallery-nav-disabled';
 
 class Gallery {
 	constructor(el, options = {}) {
 		this.containerNode = el;
 		this.size = el.childElementCount;
-		this.currentSlide = 2;
+		this.currentSlide = 0;
 		this.currentSlideWasChanged = false;
 		this.settings = {
 			margin: options.margin || 0
@@ -31,7 +33,8 @@ class Gallery {
 		this.moveToLeft = this.moveToLeft.bind(this);
 		this.moveToRight = this.moveToRight.bind(this);
 		this.changeCurrentSlide = this.changeCurrentSlide.bind(this);
-		this.changeActiveDotSlide = this.changeActiveDotSlide.bind(this);
+		this.changeActiveDotClass = this.changeActiveDotClass.bind(this);
+		this.changeDisabledNav = this.changeDisabledNav.bind(this);
 
 		this.manageHTML();
 		this.setParameters();
@@ -42,9 +45,12 @@ class Gallery {
 	manageHTML() {
 		this.containerNode.classList.add(galleryClass);
 		this.containerNode.innerHTML = `
-			<div class="${galleryWrapperClass}">
-				${this.containerNode.innerHTML}
+			<div class="${galleryWrapperContainerClass}">
+				<div class="${galleryWrapperClass}">
+					${this.containerNode.innerHTML}
+				</div>
 			</div>
+
 			<div class="${galleryNavClass}">
 				<button type="button" class="${galleryNavLeftClass}">Left</button>
 				<button type="button" class="${galleryNavRightClass}">Right</button>
@@ -52,6 +58,8 @@ class Gallery {
 			<div class="${galleryDotsClass}">
 			</div>
 		`;
+
+		this.wrapperContainerNode = this.containerNode.querySelector(`.${galleryWrapperContainerClass}`);
 		this.wrapper = this.containerNode.querySelector(`.${galleryWrapperClass}`);
 		this.dotsNode = this.containerNode.querySelector(`.${galleryDotsClass}`);
 
@@ -66,20 +74,23 @@ class Gallery {
 			`<button class="${galleryDotClass} ${key === this.currentSlide ? galleryDotsActiveClass : ''}"></button>`
 		)).join('');
 
-		this.dotsNodes = this.dotsNode.querySelectorAll(`.${galleryDotClass}`);
+		this.dotNodes = this.dotsNode.querySelectorAll(`.${galleryDotClass}`);
 		this.navLeft = this.containerNode.querySelector(`.${galleryNavLeftClass}`);
-		this.navRigth = this.containerNode.querySelector(`.${galleryNavRightClass}`)
+		this.navRight = this.containerNode.querySelector(`.${galleryNavRightClass}`)
 	}
 
 	setParameters() {
-		const coordsContainer = this.containerNode.getBoundingClientRect();
-		this.width = coordsContainer.width;
+		const coordsWrapperContainer = this.wrapperContainerNode.getBoundingClientRect();
+		this.width = coordsWrapperContainer.width;
 		this.maximumX = -(this.size - 1) * this.width;
 		this.x = -this.currentSlide * this.width;
 
 		this.resetStyleTransition();
 		this.wrapper.style.width = `${this.size * (this.width + this.settings.margin)}px`;
 		this.setStylePosition();
+		this.changeActiveDotClass();
+		this.changeDisabledNav();
+
 		Array.from(this.slidesNodes).forEach((slidesNode) => {
 			slidesNode.style.width = `${this.width}px`;
 			slidesNode.style.marginRight = `${this.settings.margin}px`
@@ -95,7 +106,7 @@ class Gallery {
 
 		this.dotsNode.addEventListener('click', this.clickDots);
 		this.navLeft.addEventListener('click', this.moveToLeft);
-		this.navRigth.addEventListener('click', this.moveToRight);
+		this.navRight.addEventListener('click', this.moveToRight);
 	}
 
 	destroyEvents() {
@@ -106,7 +117,7 @@ class Gallery {
 
 		this.dotsNode.removeEventListener('click', this.clickDots);
 		this.navLeft.removeEventListener('click', this.moveToLeft);
-		this.navRigth.removeEventListener('click', this.moveToRight);
+		this.navRight.removeEventListener('click', this.moveToRight);
 	}
 
 	resizeGallery () {
@@ -157,24 +168,19 @@ class Gallery {
 	}
 
 	clickDots(evt) {
-		const dotNode = evt.target.closest('button');
-		if (!dotNode) {
-			return;
-		}
+		const dotNode = evt.target.closest("button");
+		if (dotNode) {
 
-		let dotNumber;
-		for(let i = 0; i < this.dotNodes.length; i++) {
-			if(this.dotNodes[i] === dotNode) {
-				dotNumber = i;
-				break;
-			}
+			let dotNumber;
+			for(let i = 0; i < this.dotNodes.length; i++)
+				if (this.dotNodes[i] === dotNode) {
+					dotNumber = i;
+					break;
+				}
 
-			if(dotNumber === this.currentSlide) {
-				return;
-			}
-
-			this.currentSlide = dotNumber;
-			this.changeCurrentSlide();
+			dotNumber !== this.currentSlide && (evt = Math.abs(this.currentSlide - dotNumber),
+			this.currentSlide = dotNumber,
+			this.changeCurrentSlide(evt))
 		}
 	}
 
@@ -200,16 +206,28 @@ class Gallery {
 		this.x = - this.currentSlide * (this.width + this.settings.margin);
 		this.setStylePosition();
 		this.setStyleTransition();
-		this.changeActiveDotSlide();
+		this.changeActiveDotClass();
+		this.changeDisabledNav();
 	}
 
-	changeActiveDotSlide () {
-		for(let i = 0; i < this.dotNodes.length; i++){
-			this.dotNodes[i].classList.remove(galleryDotsActiveClass);
-			this.dotNodes[this.currentSlide].classList.add(galleryDotsActiveClass);
+	changeDisabledNav() {
+		if (this.currentSlide <= 0) {
+			this.navLeft.classList.add(galleryNavDisabledClass);
+		} else {
+			this.navLeft.classList.remove(galleryNavDisabledClass);
 		}
 
-		
+		if (this.currentSlide >= this.size - 1) {
+			this.navRight.classList.add(galleryNavDisabledClass);
+		} else {
+			this.navRight.classList.remove(galleryNavDisabledClass);
+		}
+	}
+
+	changeActiveDotClass () {
+		for(let i = 0; i < this.dotNodes.length; i++)
+			this.dotNodes[i].classList.remove(galleryDotsActiveClass);
+		this.dotNodes[this.currentSlide].classList.add(galleryDotsActiveClass);
 	}
 
 	setStylePosition() {

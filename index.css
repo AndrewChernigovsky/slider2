@@ -1,27 +1,15 @@
+*{
+	box-sizing: border-box;
+}
+
 body {
 	margin: 0;
 	padding: 10px;
+	max-width: 900px;
+	margin: 0 auto;
 }
 
-.slide {
-	height: 200px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.slide-1 {
-	background-color: rgb(255, 194, 194);
-}
-
-.slide-2 {
-	background-color: rgb(21, 49, 173);
-}
-
-.slide-3 {
-	background-color: rgb(230, 53, 53);
-}
-
-.slide-4 {
-	background-color: rgb(73, 167, 143);
+.slide img {
+	width: 100%;
+	pointer-events: none;
 }
